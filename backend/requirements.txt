@@ -1,0 +1,9 @@
+fastapi==0.115.12
+uvicorn[standard]==0.34.2
+sounddevice==0.5.1
+numpy==2.2.5
+webrtcvad-wheels==2.0.14
+openai==1.77.0
+sqlalchemy==2.0.40
+pydantic-settings==2.9.1
+python-multipart==0.0.20
