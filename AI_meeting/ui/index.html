@@ -1,68 +1,332 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI Meeting Assistant</title>
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 
     <style>
+        :root {
+            --bg: #0f172a;
+            --card: #111827;
+            --card-2: #1f2937;
+            --text: #e5e7eb;
+            --subtle: #9ca3af;
+            --primary: #2563eb;
+            --primary-2: #1d4ed8;
+            --system: #047857;
+            --error: #dc2626;
+            --border: #334155;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: Arial;
-            background: #0f172a;
-            color: white;
-            padding: 20px;
+            margin: 0;
+            font-family: Inter, Arial, sans-serif;
+            background: radial-gradient(circle at top, #1e293b, var(--bg) 40%);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 24px;
         }
 
         .container {
-            max-width: 800px;
-            margin: auto;
+            max-width: 920px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .title {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            margin: 4px 0 0;
+            color: var(--subtle);
+            font-size: 14px;
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: rgba(17, 24, 39, 0.65);
+            font-size: 13px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--error);
+            box-shadow: 0 0 10px var(--error);
+        }
+
+        .status.online .status-dot {
+            background: #22c55e;
+            box-shadow: 0 0 10px #22c55e;
+        }
+
+        .panel {
+            background: rgba(17, 24, 39, 0.8);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 14px;
+            margin-bottom: 14px;
+            backdrop-filter: blur(6px);
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .actions,
+        .filters {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        button,
+        select {
+            border: 1px solid var(--border);
+            background: var(--card-2);
+            color: var(--text);
+            padding: 8px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        button:hover,
+        select:hover {
+            border-color: #64748b;
+        }
+
+        .btn-primary {
+            border-color: var(--primary);
+            background: linear-gradient(120deg, var(--primary), var(--primary-2));
+        }
+
+        .meta {
+            color: var(--subtle);
+            font-size: 13px;
+        }
+
+        .log {
+            height: 62vh;
+            overflow-y: auto;
+            padding-right: 4px;
         }
 
         .msg {
             margin: 10px 0;
-            padding: 10px;
-            border-radius: 10px;
+            border: 1px solid transparent;
+            border-radius: 12px;
+            padding: 12px;
+            background: rgba(31, 41, 55, 0.75);
+            animation: fadeIn 0.2s ease;
         }
 
-        .mic {
-            background: #1e40af;
+        .msg .top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            gap: 8px;
         }
 
-        .system {
-            background: #065f46;
-        }
-
-        .time {
+        .badge {
             font-size: 12px;
-            opacity: 0.6;
+            border-radius: 999px;
+            padding: 4px 8px;
+            font-weight: 600;
+        }
+
+        .msg.mic {
+            border-color: rgba(37, 99, 235, 0.65);
+        }
+
+        .msg.mic .badge {
+            background: rgba(37, 99, 235, 0.2);
+            color: #93c5fd;
+        }
+
+        .msg.system {
+            border-color: rgba(4, 120, 87, 0.7);
+        }
+
+        .msg.system .badge {
+            background: rgba(4, 120, 87, 0.25);
+            color: #6ee7b7;
+        }
+
+        .msg .time {
+            font-size: 12px;
+            color: var(--subtle);
+        }
+
+        .msg .content {
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        .empty {
+            text-align: center;
+            color: var(--subtle);
+            border: 1px dashed var(--border);
+            border-radius: 12px;
+            padding: 28px 12px;
+            margin-top: 8px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
 
 <body>
-
 <div class="container">
-    <h2>🎤 AI Realtime Translator</h2>
-    <div id="log"></div>
+    <div class="header">
+        <div>
+            <h1 class="title">🎤 AI Meeting Assistant</h1>
+            <p class="subtitle">Realtime transcript từ micro và âm thanh hệ thống.</p>
+        </div>
+        <div id="socketStatus" class="status">
+            <span class="status-dot"></span>
+            <span>Đang ngắt kết nối</span>
+        </div>
+    </div>
+
+    <div class="panel toolbar">
+        <div class="actions">
+            <button id="autoScrollBtn" class="btn-primary">Auto-scroll: Bật</button>
+            <button id="clearBtn">Xoá log</button>
+        </div>
+
+        <div class="filters">
+            <label class="meta" for="sourceFilter">Nguồn:</label>
+            <select id="sourceFilter">
+                <option value="all">Tất cả</option>
+                <option value="mic">Micro</option>
+                <option value="system">System</option>
+            </select>
+            <span id="counter" class="meta">0 bản ghi</span>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div id="log" class="log"></div>
+        <div id="emptyState" class="empty">Chưa có transcript. Hãy kết nối và bắt đầu thu âm.</div>
+    </div>
 </div>
 
 <script>
-const socket = io();
-const log = document.getElementById("log");
+    const socket = io();
+    const log = document.getElementById("log");
+    const clearBtn = document.getElementById("clearBtn");
+    const autoScrollBtn = document.getElementById("autoScrollBtn");
+    const sourceFilter = document.getElementById("sourceFilter");
+    const counter = document.getElementById("counter");
+    const emptyState = document.getElementById("emptyState");
+    const socketStatus = document.getElementById("socketStatus");
 
-socket.on("transcript", (data) => {
-    const div = document.createElement("div");
+    let autoScroll = true;
+    const transcripts = [];
 
-    div.className = "msg " + data.source;
+    function escapeHTML(text) {
+        const div = document.createElement("div");
+        div.textContent = text || "";
+        return div.innerHTML;
+    }
 
-    div.innerHTML = `
-        <b>${data.source.toUpperCase()}</b>: ${data.text}
-        <div class="time">${data.time}</div>
-    `;
+    function updateStatus(connected) {
+        socketStatus.classList.toggle("online", connected);
+        socketStatus.querySelector("span:last-child").textContent = connected
+            ? "Đã kết nối server"
+            : "Đang ngắt kết nối";
+    }
 
-    log.appendChild(div);
-    log.scrollTop = log.scrollHeight;
-});
+    function render() {
+        const filter = sourceFilter.value;
+        const filtered = transcripts.filter(item => filter === "all" || item.source === filter);
+
+        log.innerHTML = "";
+        filtered.forEach((item) => {
+            const div = document.createElement("div");
+            div.className = `msg ${item.source}`;
+
+            const label = item.source === "system" ? "SYSTEM" : "MIC";
+            div.innerHTML = `
+                <div class="top">
+                    <span class="badge">${label}</span>
+                    <span class="time">${escapeHTML(item.time || "--:--:--")}</span>
+                </div>
+                <div class="content">${escapeHTML(item.text)}</div>
+            `;
+
+            log.appendChild(div);
+        });
+
+        counter.textContent = `${filtered.length} bản ghi`;
+        emptyState.style.display = filtered.length === 0 ? "block" : "none";
+
+        if (autoScroll) {
+            log.scrollTop = log.scrollHeight;
+        }
+    }
+
+    socket.on("connect", () => updateStatus(true));
+    socket.on("disconnect", () => updateStatus(false));
+
+    socket.on("transcript", (data) => {
+        transcripts.push({
+            text: data?.text || "",
+            source: data?.source === "system" ? "system" : "mic",
+            time: data?.time || new Date().toLocaleTimeString("vi-VN")
+        });
+        render();
+    });
+
+    autoScrollBtn.addEventListener("click", () => {
+        autoScroll = !autoScroll;
+        autoScrollBtn.textContent = `Auto-scroll: ${autoScroll ? "Bật" : "Tắt"}`;
+        autoScrollBtn.classList.toggle("btn-primary", autoScroll);
+        if (autoScroll) {
+            log.scrollTop = log.scrollHeight;
+        }
+    });
+
+    clearBtn.addEventListener("click", () => {
+        transcripts.length = 0;
+        render();
+    });
+
+    sourceFilter.addEventListener("change", render);
+    updateStatus(socket.connected);
+    render();
 </script>
-
 </body>
 </html>
